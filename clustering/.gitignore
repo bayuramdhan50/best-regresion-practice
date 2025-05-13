@@ -1,0 +1,20 @@
+# Ignore visualization files
+*.png
+
+# Ignore generated reports
+laporan_clustering.txt
+
+# Ignore pycache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Optionally ignore datasets (uncomment if you want to track datasets separately)
+# *.csv
+
+# OS specific files
+.DS_Store
+Thumbs.db
