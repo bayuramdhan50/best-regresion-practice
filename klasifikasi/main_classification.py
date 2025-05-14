@@ -76,24 +76,34 @@ def preprocess_data(df, target_col):
     else:
         X = df.drop([target_col], axis=1)
     y = df[target_col]
-    
+
+    # Konversi label kategorikal ke numerik jika perlu (LabelEncoder untuk target)
+    from sklearn.preprocessing import LabelEncoder
+    if y.dtype == 'object' or str(y.dtype).startswith('category'):
+        le = LabelEncoder()
+        y = le.fit_transform(y)
+        print(f"Label target dikonversi: {dict(zip(le.classes_, le.transform(le.classes_)))}")
+
+    # Untuk fitur kategorikal (selain target), lakukan one-hot encoding
+    X = pd.get_dummies(X, drop_first=True)
+
     # Split data menjadi training dan testing
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-    
+
     print(f"\nData dibagi menjadi {X_train.shape[0]} sampel train dan {X_test.shape[0]} sampel test")
-    
+
     # Standarisasi fitur numerik
     scaler = StandardScaler()
     X_train_scaled = X_train.copy()
     X_test_scaled = X_test.copy()
-    
+
     # Deteksi kolom numerik
     numeric_cols = X_train.select_dtypes(include=['int64', 'float64']).columns.tolist()
     if numeric_cols:
         print(f"\nMelakukan standarisasi pada {len(numeric_cols)} kolom numerik")
         X_train_scaled[numeric_cols] = scaler.fit_transform(X_train[numeric_cols])
         X_test_scaled[numeric_cols] = scaler.transform(X_test[numeric_cols])
-    
+
     return X_train_scaled, X_test_scaled, y_train, y_test
 
 # Fungsi untuk evaluasi model
@@ -186,8 +196,8 @@ def compare_models(X_train, X_test, y_train, y_test):
         print(f"\nMemproses model: {name}")
         result = evaluate_model(model, X_train, X_test, y_train, y_test, name)
         results.append(result)
-        print(f"  Akurasi training: {result['train_accuracy']:.4f}")
-        print(f"  Akurasi testing: {result['test_accuracy']:.4f}")
+        print(f"  Akurasi training: {result['train_accuracy']*100:.2f}%")
+        print(f"  Akurasi testing: {result['test_accuracy']*100:.2f}%")
         print(f"  F1 Score: {result['test_f1']:.4f}")
     
     return results
@@ -314,8 +324,8 @@ def tune_best_model(best_model_name, X_train, X_test, y_train, y_test):
     result = evaluate_model(best_model, X_train, X_test, y_train, y_test, f"{best_model_name} (Tuned)")
     
     print("\nPerforma model setelah tuning:")
-    print(f"  Akurasi training: {result['train_accuracy']:.4f}")
-    print(f"  Akurasi testing: {result['test_accuracy']:.4f}")
+    print(f"  Akurasi training: {result['train_accuracy']*100:.2f}%")
+    print(f"  Akurasi testing: {result['test_accuracy']*100:.2f}%")
     print(f"  Precision: {result['test_precision']:.4f}")
     print(f"  Recall: {result['test_recall']:.4f}")
     print(f"  F1 Score: {result['test_f1']:.4f}")
@@ -592,7 +602,7 @@ def main():
     print("="*80)
     print(f"Model klasifikasi terbaik untuk dataset {file_path} adalah: {tuned_result['model_name']}")
     print(f"Dengan metrik performa:")
-    print(f"  Akurasi: {tuned_result['test_accuracy']:.4f}")
+    print(f"  Akurasi: {tuned_result['test_accuracy']*100:.2f}%")
     print(f"  Precision: {tuned_result['test_precision']:.4f}")
     print(f"  Recall: {tuned_result['test_recall']:.4f}")
     print(f"  F1 Score: {tuned_result['test_f1']:.4f}")
@@ -607,7 +617,7 @@ def main():
         f.write(f"Dataset: {file_path}\n\n")
         f.write("Model terbaik: " + tuned_result['model_name'] + "\n")
         f.write("Metrik performa:\n")
-        f.write(f"  Akurasi: {tuned_result['test_accuracy']:.4f}\n")
+        f.write(f"  Akurasi: {tuned_result['test_accuracy']*100:.2f}%\n")
         f.write(f"  Precision: {tuned_result['test_precision']:.4f}\n")
         f.write(f"  Recall: {tuned_result['test_recall']:.4f}\n")
         f.write(f"  F1 Score: {tuned_result['test_f1']:.4f}\n")
