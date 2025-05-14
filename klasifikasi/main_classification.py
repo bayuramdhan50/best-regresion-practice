@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.metrics import classification_report, roc_curve, roc_auc_score, precision_recall_curve, auc
 from sklearn.pipeline import Pipeline
 
-# Model klasifikasi (tanpa Logistic Regression)
+# Model klasifikasi 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
 from sklearn.svm import SVC
