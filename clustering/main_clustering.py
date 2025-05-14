@@ -1,3 +1,5 @@
+import os
+os.environ['JOBLIB_MULTIPROCESSING'] = '0'
 # Import library
 import pandas as pd
 import numpy as np
@@ -38,24 +40,32 @@ def preprocess_data(df):
         df = df.drop('CustomerID', axis=1)
     elif 'ProductID' in df.columns:
         df = df.drop('ProductID', axis=1)
-    
-    # Cek data kategorikal dan numerik
-    categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
+
+    # Deteksi kolom kategorikal (string/object/category) dan numerik
+    categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
     numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
-    
-    # One-hot encoding untuk data kategorikal
+
+    # One-hot encoding untuk data kategorikal string
     if categorical_cols:
-        print(f"\nMelakukan one-hot encoding pada {len(categorical_cols)} kolom kategorikal")
+        print(f"\nMelakukan one-hot encoding pada {len(categorical_cols)} kolom kategorikal: {categorical_cols}")
         df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
-    
-    # Standarisasi data numerik
-    print(f"\nMelakukan standarisasi pada {len(numeric_cols)} kolom numerik")
+        print(f"Kolom setelah one-hot encoding: {list(df.columns)}")
+        # Info khusus untuk kolom Gender
+        gender_cols = [col for col in df.columns if col.startswith('Gender_')]
+        if gender_cols:
+            print(f"Kolom Gender sudah diubah menjadi one-hot encoding: {gender_cols}")
+    else:
+        print("\nTidak ada kolom kategorikal string yang perlu di-encoding.")
+
+    # Standarisasi seluruh fitur (setelah one-hot encoding)
+    print(f"\nMelakukan standarisasi pada {len(df.columns)} fitur (termasuk hasil one-hot encoding)")
     scaler = StandardScaler()
     df_scaled = scaler.fit_transform(df)
-    
+
     # Buat DataFrame dengan nama kolom
     df_scaled = pd.DataFrame(df_scaled, columns=df.columns)
-    
+    print(f"Kolom akhir setelah preprocessing: {list(df_scaled.columns)}")
+
     return df_scaled, df.columns.tolist()
 
 # Fungsi untuk menentukan jumlah cluster optimal dengan metode elbow
@@ -309,25 +319,28 @@ def visualize_clusters(data, labels_dict, feature_names, original_df=None):
         # Tambahkan label cluster dari metode terbaik ke DataFrame asli
         best_method = max(labels_dict, key=lambda k: silhouette_score(data, labels_dict[k]) if len(set(labels_dict[k])) > 1 and -1 not in labels_dict[k] else 0)
         original_df['Cluster'] = labels_dict[best_method]
-        
+
+        # Hanya gunakan kolom numerik untuk analisis cluster
+        numeric_cols = original_df.select_dtypes(include=[np.number]).columns
+
         # Analisis karakteristik setiap cluster
         plt.figure(figsize=(15, 10))
-        
-        # Hitung rata-rata fitur untuk setiap cluster
-        cluster_means = original_df.groupby('Cluster').mean()
-        
+
+        # Hitung rata-rata fitur numerik untuk setiap cluster
+        cluster_means = original_df.groupby('Cluster')[numeric_cols].mean()
+
         # Heatmap perbandingan cluster
         sns.heatmap(cluster_means, annot=True, cmap='viridis', fmt='.2f')
         plt.title('Karakteristik Rata-rata untuk Setiap Cluster')
         plt.tight_layout()
         plt.savefig('clustering/cluster_characteristics.png')
         print("Visualisasi karakteristik cluster disimpan sebagai 'clustering/cluster_characteristics.png'")
-        
-        # Simpan profil cluster ke file
-        cluster_profile = original_df.groupby('Cluster').agg(['mean', 'std'])
+
+        # Simpan profil cluster ke file (hanya numerik)
+        cluster_profile = original_df.groupby('Cluster')[numeric_cols].agg(['mean', 'std'])
         cluster_profile.to_csv('clustering/cluster_profiles.csv')
         print("Profil detail cluster disimpan sebagai 'clustering/cluster_profiles.csv'")
-        
+
         return original_df, cluster_profile
     
     return df_reduced

@@ -3,6 +3,8 @@
 
 # Ignore generated reports
 laporan_clustering.txt
+cluster_profiles.csv
+clustering_results.csv
 
 # Ignore pycache
 __pycache__/
